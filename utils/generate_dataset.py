@@ -1,10 +1,7 @@
-import sys
 import random
-from enum import Enum
 import argparse
 from tqdm import tqdm
 import threading
-
 
 def generate(args):
     # Calculate parameters
@@ -22,6 +19,7 @@ def generate(args):
     def generate_train():
         with open("../datasets/train.csv", 'w') as f:
             print('Generating training set')
+            f.write('number,label\n')
             for i in tqdm(range(int(trainsize*size)), colour="green"):
                 n = random.randint(minv, maxv)
                 f.write(str(n) + ',' + ef(n) + '\n')
@@ -29,6 +27,7 @@ def generate(args):
     def generate_test():
         with open("../datasets/test.csv", 'w') as f:
             print('Generating test set')
+            f.write('number,label\n')
             for i in tqdm(range(int(testsize*size)+1), colour="magenta"):
                 n = random.randint(minv, maxv)
                 f.write(str(n) + ',' + ef(n) + '\n')
@@ -36,6 +35,7 @@ def generate(args):
     def generate_validation():
         with open("../datasets/validation.csv", 'w') as f:
             print('Generating validation set')
+            f.write('number,label\n')
             for i in tqdm(range(int(testsize*size)+1), colour="blue"):
                 n = random.randint(minv, maxv)
                 f.write(str(n) + ',' + ef(n) + '\n')
