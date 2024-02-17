@@ -130,3 +130,6 @@ dmypy.json
 
 # Datasets
 datasets/*.csv
+
+# Models
+models/trained/*
