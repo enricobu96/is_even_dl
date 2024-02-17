@@ -14,4 +14,4 @@ class NumberDataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
-        return self.numbers.iloc[idx], labs[self.labels.iloc[idx]]
+        return self.numbers.iloc[idx], self.labels.iloc[idx]
