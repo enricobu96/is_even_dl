@@ -6,35 +6,25 @@ from classes.NumberDataset import NumberDataset
 from utils.performance_measure import precision_recall_f1
 from models.EvenNet import EvenNet
 import time
-# from utils.data_loader import ImageDataset
-# from model.cnn import CNN
-# import torch.nn as nn
-# from torchvision import transforms
-# from utils.performance_measure import precision_recall_f1
+import argparse
+import pickle
 
-
-
-
-def execute(batch_size_train=1000, batch_size_test=1000, lr=.5, epochs=2000, patience=5, weight_decay=0.1, model=EvenNet()):
+def train(batch_size_train, lr, epochs, is_verbose, weight_decay, use_validation):
     """
     HYPERPARAMETERS AND CONSTANTS
         - BATCH_SIZE_TRAIN: size of the batches for training phase
-        - BATCH_SIZE_TEST: size of the batches for testing phase
         - LR: learning rate
         - N_EPOCHS: number of epochs to execute
-        - PATIENCE: the number of previous validation losses smaller than the actual one needed to early stop the training
         - IS_VERBOSE: to avoid too much output
         - WEIGHT_DECAY: the weight decay for the regularization in Adam optimizer
         - USE_VALIDATION: to use the validation set or not. If false only the test set is used, if true the validation set is used
     """
     BATCH_SIZE_TRAIN = batch_size_train
-    BATCH_SIZE_TEST = batch_size_test
     LR = lr
     N_EPOCHS = epochs
-    PATIENCE = patience
-    IS_VERBOSE = True
+    IS_VERBOSE = is_verbose
     WEIGHT_DECAY = weight_decay
-    USE_VALIDATION = False
+    USE_VALIDATION = use_validation
 
     """
     SETUP
@@ -44,11 +34,6 @@ def execute(batch_size_train=1000, batch_size_test=1000, lr=.5, epochs=2000, pat
     else:
         device = torch.device('cpu')
 
-    classes = ['even', 'odd'] # Get all the classes for one-hot encoding
-
-    def collate_fn(batch):
-        return tuple(zip(*batch))
-
     """
     DATA LOADING
         - Load all data: train, test, validation
@@ -56,14 +41,15 @@ def execute(batch_size_train=1000, batch_size_test=1000, lr=.5, epochs=2000, pat
 
     train_set = NumberDataset(pd.read_csv('./datasets/train.csv'))
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=BATCH_SIZE_TRAIN)
-    test_set = NumberDataset(pd.read_csv('./datasets/test.csv'))
-    test_loader = torch.utils.data.DataLoader(test_set)
+
     if USE_VALIDATION:
         val_set = NumberDataset(pd.read_csv('./datasets/validation.csv'))
         val_loader = torch.utils.data.DataLoader(val_set)
 
     train_size = len(train_set)
-    test_size = len(test_set)
+
+    print(batch_size_train)
+    model = EvenNet(input_dim=batch_size_train)
     """
     MODEL INITIALIZATION
         - optimizer: Adam with weight decay as regularization technique
@@ -71,12 +57,11 @@ def execute(batch_size_train=1000, batch_size_test=1000, lr=.5, epochs=2000, pat
     """
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
-    loss_function = torch.nn.MSELoss()
+    loss_function = torch.nn.BCELoss()
 
     """
     TRAIN
         Notes:
-        - Uses early stopping if the validation loss does not improve after a certain number of epochs; this depends on PATIENCE.
         - Uses the validation set if USE_VALIDATION is true, otherwise the test set is used
         - The classes are inferred based on the activation threshold
         - Precision, recall and f1 are computed for each epoch and the average is returned
@@ -91,22 +76,19 @@ def execute(batch_size_train=1000, batch_size_test=1000, lr=.5, epochs=2000, pat
 
         for batch_num, (data, target) in enumerate(train_loader):
             optimizer.zero_grad()
-
             outputs = model(data.float())
-
             loss = loss_function(outputs, target.float())
-    
+
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
 
+
             predictions = outputs.data
             predictions = torch.argwhere(predictions > 0.5)
-            target = torch.argwhere(target)
-            _precision, _recall, _f1 = precision_recall_f1(predictions, target)
+            target = torch.argwhere(target > 0.5)
+            _precision, _, _ = precision_recall_f1(predictions, target)
             precision += _precision
-            recall += _recall
-            f1 += _f1
 
             if IS_VERBOSE:
                 print('Training: Epoch %d - Batch %d/%d: Loss: %.4f' % 
@@ -114,40 +96,25 @@ def execute(batch_size_train=1000, batch_size_test=1000, lr=.5, epochs=2000, pat
                 
 
         print('EPOCH', epoch, 'PRECISION:', (precision / (train_size/BATCH_SIZE_TRAIN)))
-        print('EPOCH', epoch, 'RECALL:', (recall / (train_size/BATCH_SIZE_TRAIN)))
-        print('EPOCH', epoch, 'F1-SCORE:', (f1 / (train_size/BATCH_SIZE_TRAIN)))
-        time.sleep(0.5)
+        time.sleep(2)
 
+    # pickle.dump(model, open('./models/trained/model.pt', 'wb'))
+    torch.save(model, './models/trained/model.pt')
 
-    """
-    TEST
-    """
-    test_loss = 0
-    precision = 0
-    recall = 0
-    f1 = 0
-    model.eval()
-    with torch.no_grad():
-        for batch_num, (data, target) in enumerate(test_loader):
-            data, target = torch.stack(data, dim=0), torch.stack(target, dim=0)
-            outputs = model(data.float())
-            loss = loss_function(outputs, target.float())
-            test_loss += loss.item()
-            predictions = outputs.data
-            predictions = torch.argwhere(predictions > 0.5)
-            target = torch.argwhere(target)
-
-            _precision, _recall, _f1 = precision_recall_f1(predictions, target)
-            precision += _precision
-            recall += _recall
-            f1 += _f1
-
-            if IS_VERBOSE:
-                print('Evaluating: Batch %d/%d: Loss: %.4f' % 
-                (batch_num, len(test_loader), test_loss / (batch_num + 1)))
-        print('TEST PRECISION:', (precision / (test_size/BATCH_SIZE_TEST)))
-        print('TEST RECALL:', (recall / (test_size/BATCH_SIZE_TEST)))
-        print('TEST F1-SCORE',  (f1 / (test_size/BATCH_SIZE_TEST)))
-
-
-execute()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-ts', '--batchsizetrain', nargs=1, type=int, help='Size of the training batch', required=False)
+    parser.add_argument('-lr', '--learningrate', nargs=1, type=float, help='Learning rate', required=False)
+    parser.add_argument('-e', '--epochs', nargs=1, type=int, help='Number of epochs', required=False)
+    parser.add_argument('-v', '--verbose', nargs=1, type=bool, help='Verbose mode on/off', required=False)
+    parser.add_argument('-wd', '--weightdecay', nargs=1, type=float, help='Weight decay (L2 regularization)', required=False)
+    parser.add_argument('-va', '--validation', nargs=1, type=bool, help='Wether use or not validation set', required=False)
+    args = parser.parse_args()
+    train(
+        batch_size_train=args.batchsizetrain[0] if args.batchsizetrain else 1000,
+        lr=args.learningrate[0] if args.learningrate else 0.5,
+        epochs=args.epochs[0] if args.epochs else 10,
+        is_verbose=args.verbose if args.verbose else True,
+        weight_decay=args.weightdecay[0] if args.weightdecay else 0.1,
+        use_validation=args.validation
+        )
