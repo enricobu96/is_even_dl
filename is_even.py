@@ -17,19 +17,11 @@ def is_even(num):
         exit()
     model.eval()
 
-    sample = {'number': num, 'label': 'even'}
-    sample = pd.DataFrame(data=sample, index=[0])
-    sample = NumberDataset(sample)
-    sample_loader = torch.utils.data.DataLoader(sample)
-
-    precision = 0
     with torch.no_grad():
-        for batch_num, (data, target) in enumerate(sample_loader):
-            outputs = model(data.float())
-            predictions = outputs.data
-            predictions = torch.argwhere(predictions)
-            print(predictions)
-            print('even' if predictions[0]>0.5 else 'odd')
+        outputs = model(torch.tensor([num]).float())
+        predictions = outputs.data
+        print(predictions)
+        print('even' if predictions[0]>0 else 'odd')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

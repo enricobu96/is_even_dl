@@ -48,7 +48,6 @@ def train(batch_size_train, lr, epochs, is_verbose, weight_decay, use_validation
 
     train_size = len(train_set)
 
-    print(batch_size_train)
     model = EvenNet(input_dim=batch_size_train)
     """
     MODEL INITIALIZATION
@@ -57,7 +56,7 @@ def train(batch_size_train, lr, epochs, is_verbose, weight_decay, use_validation
     """
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
-    loss_function = torch.nn.BCELoss()
+    loss_function = torch.nn.MSELoss()
 
     """
     TRAIN
@@ -66,7 +65,6 @@ def train(batch_size_train, lr, epochs, is_verbose, weight_decay, use_validation
         - The classes are inferred based on the activation threshold
         - Precision, recall and f1 are computed for each epoch and the average is returned
     """
-    pre_valid_losses = []
     for epoch in range(N_EPOCHS):
         train_loss = 0
         valid_losses = []
@@ -85,8 +83,8 @@ def train(batch_size_train, lr, epochs, is_verbose, weight_decay, use_validation
 
 
             predictions = outputs.data
-            predictions = torch.argwhere(predictions > 0.5)
-            target = torch.argwhere(target > 0.5)
+            predictions = torch.argwhere(predictions < 0)
+            target = torch.argwhere(target > 0)
             _precision, _, _ = precision_recall_f1(predictions, target)
             precision += _precision
 
@@ -115,6 +113,6 @@ if __name__ == "__main__":
         lr=args.learningrate[0] if args.learningrate else 0.5,
         epochs=args.epochs[0] if args.epochs else 10,
         is_verbose=args.verbose if args.verbose else True,
-        weight_decay=args.weightdecay[0] if args.weightdecay else 0.1,
+        weight_decay=args.weightdecay[0] if args.weightdecay else 0.9,
         use_validation=args.validation
         )

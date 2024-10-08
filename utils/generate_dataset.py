@@ -22,7 +22,7 @@ def generate(args):
     testsize=closest_to_bs(int(testsize*size), batch_size)
 
     # Label function
-    ef = lambda x: '1' if x%2==0 else '0'
+    ef = lambda x: '1' if x%2==0 else '-1'
 
     print('Generating random dataset, brb...')
     def generate_train():
