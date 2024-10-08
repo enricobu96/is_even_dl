@@ -7,11 +7,11 @@ labs = dict({'even': 0, 'odd': 1})
 
 class NumberDataset(Dataset):
     def __init__(self, dataset_file):
-        self.numbers = dataset_file['number']
-        self.labels = dataset_file['label']
+        self.numbers = tensor(dataset_file['number'])
+        self.labels = tensor(dataset_file['label'])
 
     def __len__(self):
         return len(self.labels)
 
     def __getitem__(self, idx):
-        return self.numbers.iloc[idx], self.labels.iloc[idx]
+        return self.numbers[idx], self.labels[idx]
