@@ -1,12 +1,17 @@
-# is_even_dl
+# Is a number even or odd? Let's find out with a neural network!
 
-This project aims to build a neural network which classifies a number as even or odd. If this sounds extremely stupid: it is. But it becomes interesting when you consider it from the xDNN (explainable deep neural network) perspective: we, in fact, already know what the function our neural network is trying to generalize is. The function is the **modulo** function, defined as follow:
-```
-f(x)=mod(x,2)
-```
-This is interesting because on one hand is a really simple function, while on the other hand it's a discontinuous function, so it needs some kind of non-linearity (e.g. a relu function) to be correctly approximized. Hence, the use of a neural network. Note that the function should be in the real domain, but we consider it as a discrete function where input can only be an integer number and the output is *0* or *1*.
+This project aims to build a neural network which classifies a number as even or odd. If this sounds extremely stupid: it is. But it becomes interesting when you consider it from the xDNN (explainable deep neural network) perspective: we, in fact, already know what the function our neural network is trying to generalize is. The function is the **modulo** function, defined as follows:
 
-Since we know the input and the function our neural network is trying to optimize, we can start studying the single nodes in the NN and try to understand why we get a certain result (still working on this).
+![Modulo function](./docs/formulas/func1.png)
+
+which in turn is:
+
+![Modulo function explained](./docs/formulas/func2.png)
+
+This is interesting because on one hand is a really simple function, while on the other hand it's a discontinuous function, which we know [can be approximated by a Neural Network](https://www.sciencedirect.com/science/article/abs/pii/0893608089900208?via%3Dihub) but only recently was that [rigorously proved to be true](https://arxiv.org/abs/2012.03016).
+Note that the function should be in the real domain, but we consider it as a discrete function where input can only be an integer number and the output is *0* or *1*.
+
+Since we know the input and the function our neural network is trying to optimize, we can then start studying the single nodes in the NN and try to understand why we get a certain result (still working on this).
 
 ## Usage
 
