@@ -39,8 +39,10 @@ def train(batch_size_train, lr, epochs, is_verbose, weight_decay, use_validation
         - Load all data: train, test, validation
     """
 
+    print('Loading dataset...')
     train_set = NumberDataset(pd.read_csv('./datasets/train.csv'))
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=BATCH_SIZE_TRAIN)
+    print('Dataset loaded!')
 
     if USE_VALIDATION:
         val_set = NumberDataset(pd.read_csv('./datasets/validation.csv'))
@@ -48,15 +50,15 @@ def train(batch_size_train, lr, epochs, is_verbose, weight_decay, use_validation
 
     train_size = len(train_set)
 
-    model = EvenNet(input_dim=batch_size_train)
+    model = EvenNet()
     """
     MODEL INITIALIZATION
         - optimizer: Adam with weight decay as regularization technique
         - loss function: binary cross entropy loss
     """
     model = model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
-    loss_function = torch.nn.MSELoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, weight_decay=0.5, momentum=0.5)
+    loss_function = torch.nn.BCELoss()
 
     """
     TRAIN
@@ -74,7 +76,11 @@ def train(batch_size_train, lr, epochs, is_verbose, weight_decay, use_validation
 
         for batch_num, (data, target) in enumerate(train_loader):
             optimizer.zero_grad()
+            data = data.view(data.size(0), -1)
+            target = target.unsqueeze(1)
             outputs = model(data.float())
+            # print('outputs', outputs, 'target', target.float())
+            # quit()
             loss = loss_function(outputs, target.float())
 
             loss.backward()
@@ -83,8 +89,9 @@ def train(batch_size_train, lr, epochs, is_verbose, weight_decay, use_validation
 
 
             predictions = outputs.data
-            predictions = torch.argwhere(predictions < 0)
-            target = torch.argwhere(target > 0)
+            predictions = torch.argwhere(predictions >= 0.5)
+            target = target.squeeze(1)
+            target = torch.argwhere(target == 1)
             _precision, _, _ = precision_recall_f1(predictions, target)
             precision += _precision
 
@@ -97,7 +104,7 @@ def train(batch_size_train, lr, epochs, is_verbose, weight_decay, use_validation
         time.sleep(2)
 
     # pickle.dump(model, open('./models/trained/model.pt', 'wb'))
-    torch.save(model, './models/trained/model.pt')
+    torch.save(model.state_dict(), './models/trained/model.pt')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -110,7 +117,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     train(
         batch_size_train=args.batchsizetrain[0] if args.batchsizetrain else 1000,
-        lr=args.learningrate[0] if args.learningrate else 0.5,
+        lr=args.learningrate[0] if args.learningrate else 1e-5,
         epochs=args.epochs[0] if args.epochs else 10,
         is_verbose=args.verbose if args.verbose else True,
         weight_decay=args.weightdecay[0] if args.weightdecay else 0.9,

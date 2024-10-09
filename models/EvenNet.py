@@ -7,9 +7,9 @@ PI = torch.acos(torch.zeros(1)).item() * 2
 cf = lambda x: torch.cos(PI*x-PI)/2+0.5
 
 def heaviside(x):
-    x = torch.where(x>0, 1, x)
-    x = torch.where(x<0, -1, x)
-    x = torch.where(x==0, 0, x)
+    x = torch.where(x>=0.5, 1, x)
+    x = torch.where(x<0.5, 0, x)
+    # x = torch.where(x==0, 0, x)
     return x
     print(x)
     exit()
@@ -26,18 +26,23 @@ def heaviside(x):
 
 class EvenNet(nn.Module):
 
-    def __init__(self, input_dim):
+    def __init__(self):
         super(EvenNet, self).__init__()
-        self.fc1 = nn.Linear(input_dim, input_dim*4)
-        self.fc2 = nn.Linear(input_dim*4, input_dim*2)
-        self.fc3 = nn.Linear(input_dim*2, input_dim)
-        self.fc4 = nn.Linear(input_dim, input_dim)
-
+        self.fc1 = nn.Linear(1, 1)
+        self.fc2 = nn.Linear(1, 3)
+        self.fc3 = nn.Linear(3, 1)
+        self.act = F.relu
+        self.sigm = F.sigmoid
 
     def forward(self, x):
+        # print(x)
         x = self.fc1(x)
-        x = F.relu(self.fc2(x))
+        x = self.act(x)
+        x = self.fc2(x)
         x = self.fc3(x)
+        x = self.sigm(x)
+        # print(x)
+        # quit()
         # x = heaviside(x)
-        x = F.relu(self.fc4(x))
+        # x = x if x==0 else 1
         return x

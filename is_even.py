@@ -4,14 +4,16 @@ from classes.NumberDataset import NumberDataset
 import pandas as pd
 from utils.performance_measure import precision_recall_f1
 import argparse
-import pickle
+from models.EvenNet import EvenNet
+
 
 def is_even(num):
     """
     MODEL INITIALIZATION
     """
+    model = EvenNet()
     if exists('./models/trained/model.pt'):
-        model = torch.load('./models/trained/model.pt')
+        model.load_state_dict(torch.load('./models/trained/model.pt', weights_only=True))
     else:
         print('Model does not exist, bye')
         exit()
